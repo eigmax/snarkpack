@@ -295,7 +295,7 @@ mod tests {
     use super::*;
 
     use crate::commitment::Output as O;
-    use ark_bls12_381::{Bls12_381 as Bls12, G1Affine, G2Affine};
+    use ark_bn254::{Bn254 as Bls12, G1Affine, G2Affine};
 
     fn fake_proof() -> AggregateProof<Bls12> {
         // create pairing, as pairing results can be compressed

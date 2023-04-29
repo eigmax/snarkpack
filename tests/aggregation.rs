@@ -1,4 +1,4 @@
-use ark_bls12_381::{Bls12_381, Fr};
+use ark_bn254::{Bn254, Fr};
 use ark_ff::One;
 use ark_groth16::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
@@ -17,13 +17,13 @@ fn groth16_aggregation() {
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1u64);
     let params = {
         let c = Benchmark::<Fr>::new(num_constraints);
-        generate_random_parameters::<Bls12_381, _, _>(c, &mut rng).unwrap()
+        generate_random_parameters::<Bn254, _, _>(c, &mut rng).unwrap()
     };
     // prepare the verification key
     let pvk = prepare_verifying_key(&params.vk);
     // prepare the SRS needed for snarkpack - specialize after to the right
     // number of proofs
-    let srs = snarkpack::srs::setup_fake_srs::<Bls12_381, _>(&mut rng, nproofs);
+    let srs = snarkpack::srs::setup_fake_srs::<Bn254, _>(&mut rng, nproofs);
     let (prover_srs, ver_srs) = srs.specialize(nproofs);
     // create all the proofs
     let proofs = (0..nproofs)

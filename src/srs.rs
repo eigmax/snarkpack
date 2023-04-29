@@ -327,7 +327,7 @@ fn read_vec<G: CanonicalDeserialize, R: Read>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use ark_bls12_381::Bls12_381 as Bls12;
+    use ark_bn254::Bn254 as Bls12;
     use rand_core::SeedableRng;
     use std::io::Cursor;
 

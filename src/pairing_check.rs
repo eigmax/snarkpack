@@ -177,17 +177,17 @@ fn mul_if_not_one<E: PairingEngine>(left: &mut E::Fqk, right: &E::Fqk) {
 #[cfg(test)]
 mod test {
     use super::*;
-    use ark_bls12_381::{Bls12_381 as Bls12, G1Projective, G2Projective};
+    use ark_bn254::{Bn254, G1Projective, G2Projective};
     use ark_std::{rand::Rng, UniformRand};
     use rand_core::SeedableRng;
 
-    fn gen_pairing_check<R: Rng + Send>(r: &mut R) -> PairingCheck<Bls12> {
+    fn gen_pairing_check<R: Rng + Send>(r: &mut R) -> PairingCheck<Bn254> {
         let g1r = G1Projective::rand(r);
         let g2r = G2Projective::rand(r);
-        let exp = Bls12::pairing(g1r.clone(), g2r.clone());
+        let exp = Bn254::pairing(g1r.clone(), g2r.clone());
         let mr = Mutex::new(r);
         let tuple =
-            PairingCheck::<Bls12>::rand(&mr, &[(&g1r.into_affine(), &g2r.into_affine())], &exp);
+            PairingCheck::<Bn254>::rand(&mr, &[(&g1r.into_affine(), &g2r.into_affine())], &exp);
         assert!(tuple.verify());
         tuple
     }
@@ -199,7 +199,7 @@ mod test {
             .collect::<Vec<_>>();
         let final_tuple = tuples
             .iter()
-            .fold(PairingCheck::<Bls12>::new(), |mut acc, tu| {
+            .fold(PairingCheck::<Bn254>::new(), |mut acc, tu| {
                 acc.merge(&tu);
                 acc
             });

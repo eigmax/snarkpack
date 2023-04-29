@@ -189,7 +189,7 @@ pub fn pair<E: PairingEngine>(
 mod tests {
     use super::*;
     use crate::srs::structured_generators_scalar_power;
-    use ark_bls12_381::{Bls12_381 as Bls12, Fr, G1Projective, G2Projective};
+    use ark_bn254::{Bn254, Fr, G1Projective, G2Projective};
     use ark_std::UniformRand;
     use rand_core::SeedableRng;
 
@@ -202,17 +202,17 @@ mod tests {
         let v = Fr::rand(&mut rng);
         let v1 = structured_generators_scalar_power(n, &h, &u);
         let v2 = structured_generators_scalar_power(n, &h, &v);
-        let vkey = VKey::<Bls12> { a: v1, b: v2 };
+        let vkey = VKey::<Bn254> { a: v1, b: v2 };
         let a = (0..n)
             .map(|_| G1Projective::rand(&mut rng).into_affine())
             .collect::<Vec<_>>();
-        let c1 = single_g1::<Bls12>(&vkey, &a).unwrap();
-        let c2 = single_g1::<Bls12>(&vkey, &a).unwrap();
+        let c1 = single_g1::<Bn254>(&vkey, &a).unwrap();
+        let c2 = single_g1::<Bn254>(&vkey, &a).unwrap();
         assert_eq!(c1, c2);
         let b = (0..n)
             .map(|_| G1Projective::rand(&mut rng).into_affine())
             .collect::<Vec<_>>();
-        let c3 = single_g1::<Bls12>(&vkey, &b).unwrap();
+        let c3 = single_g1::<Bn254>(&vkey, &b).unwrap();
         assert!(c1 != c3);
     }
 
@@ -229,8 +229,8 @@ mod tests {
         let w1 = structured_generators_scalar_power(2 * n, &g, &u);
         let w2 = structured_generators_scalar_power(2 * n, &g, &v);
 
-        let vkey = VKey::<Bls12> { a: v1, b: v2 };
-        let wkey = WKey::<Bls12> {
+        let vkey = VKey::<Bn254> { a: v1, b: v2 };
+        let wkey = WKey::<Bn254> {
             a: w1[n..].to_vec(),
             b: w2[n..].to_vec(),
         };
@@ -240,9 +240,9 @@ mod tests {
         let b = (0..n)
             .map(|_| G2Projective::rand(&mut rng).into_affine())
             .collect::<Vec<_>>();
-        let c1 = pair::<Bls12>(&vkey, &wkey, &a, &b).unwrap();
-        let c2 = pair::<Bls12>(&vkey, &wkey, &a, &b).unwrap();
+        let c1 = pair::<Bn254>(&vkey, &wkey, &a, &b).unwrap();
+        let c2 = pair::<Bn254>(&vkey, &wkey, &a, &b).unwrap();
         assert_eq!(c1, c2);
-        pair::<Bls12>(&vkey, &wkey, &a[1..2], &b).expect_err("this should have failed");
+        pair::<Bn254>(&vkey, &wkey, &a[1..2], &b).expect_err("this should have failed");
     }
 }
