@@ -118,3 +118,26 @@ fn snarkjs_groth16_aggreagtion() {
     )
     .expect("error in verification");
 }
+
+/*
+#[test]
+fn verify_proof_with_zkey_with_r1cs() {
+    use super::*;
+    use ark_bn254::{G1Projective, G2Projective};
+    use ark_crypto_primitives::snark::SNARK;
+    use num_bigint::BigUint;
+    use serde_json::Value;
+    use std::fs::File;
+
+    use ark_groth16::Groth16;
+    use ark_std::rand::thread_rng;
+    use num_traits::{One, Zero};
+    use std::str::FromStr;
+
+    use std::convert::TryFrom;
+
+    let path = "./tests/circuit_final.zkey";
+    let mut file = File::open(path).unwrap();
+    let (params, _matrices) = read_zkey(&mut file).unwrap(); // binfile.proving_key().unwrap();
+}
+*/

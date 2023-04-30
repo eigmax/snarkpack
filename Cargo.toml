@@ -26,6 +26,10 @@ ark-snark = { version = "0.3.0", default-features = false }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+byteorder = "1.4.3"
+num = { version = "0.4.0" }
+num-traits = { version = "0.2.0", default-features = false }
+num-bigint = { version = "0.4", default-features = false, features = ["rand"] }
 
 [dev-dependencies]
 rand_chacha = "0.3"
