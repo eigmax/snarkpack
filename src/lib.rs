@@ -17,10 +17,10 @@ mod snarkjs_zkey;
 #[macro_use]
 extern crate serde_derive;
 
-pub use snarkjs_zkey::*;
-pub use snarkjs_proof::*;
 pub use errors::*;
 pub use prover::*;
+pub use snarkjs_proof::*;
+pub use snarkjs_zkey::*;
 pub use transcript::*;
 pub use verifier::*;
 

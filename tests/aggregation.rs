@@ -1,18 +1,17 @@
+use ark_bn254::Fq6;
+use ark_bn254::G1Projective;
+use ark_bn254::G2Projective;
+use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
 #[allow(dead_code)]
 use ark_ff::One;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
-    Proof,
+    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
 };
-use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G2Affine};
-use ark_bn254::Fq6;
-use ark_bn254::G2Projective;
-use ark_bn254::G1Projective;
 
+use serde_json::Value;
 use snarkpack;
 use snarkpack::transcript::Transcript;
-use snarkpack::{read_zkey, fr_from_str, fq_from_str};
-use serde_json::Value;
+use snarkpack::{fq_from_str, fr_from_str, read_zkey};
 mod constraints;
 use crate::constraints::Benchmark;
 use rand_core::SeedableRng;
@@ -36,6 +35,7 @@ fn groth16_aggregation() {
     let pvk = prepare_verifying_key(&params.vk);
     // prepare the SRS needed for snarkpack - specialize after to the right
     // number of proofs
+    // generate SRS: https://github.com/filecoin-project/taupipp/blob/master/src/powers.rs#L58
     let srs = snarkpack::srs::setup_fake_srs::<Bn254, _>(&mut rng, nproofs);
     let (prover_srs, ver_srs) = srs.specialize(nproofs);
     // create all the proofs
@@ -71,8 +71,8 @@ fn groth16_aggregation() {
 
 #[test]
 fn snarkjs_groth16_aggreagtion() {
+    use snarkpack::{fr_from_str, get_prepared_verifying_key, SnarkJSProof, SnarkJSVK};
     use std::fs::File;
-    use snarkpack::{SnarkJSVK, SnarkJSProof, fr_from_str, get_prepared_verifying_key};
 
     let nproofs = 2;
     let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1u64);
@@ -94,7 +94,9 @@ fn snarkjs_groth16_aggreagtion() {
         let public_json: Vec<String> = serde_json::from_reader(file).unwrap();
         let pvk = get_prepared_verifying_key(vk_json.clone());
         let ark_pub_inputs: Vec<ark_bn254::Fr> = public_json.into_iter().map(fr_from_str).collect();
-        let res = ark_groth16::verify_proof(&pvk.into(), &proof_json.clone().into(), &ark_pub_inputs[..]).unwrap();
+        let res =
+            ark_groth16::verify_proof(&pvk.into(), &proof_json.clone().into(), &ark_pub_inputs[..])
+                .unwrap();
         assert_eq!(res, true);
         proofs.push(proof_json.into());
         inputs.push(ark_pub_inputs);
@@ -124,69 +126,69 @@ fn snarkjs_groth16_aggreagtion() {
 }
 
 fn json_to_g1(json: &Value, key: &str) -> G1Affine {
-        let els: Vec<String> = json
-            .get(key)
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|i| i.as_str().unwrap().to_string())
-            .collect();
-        G1Affine::from(G1Projective::new(
-            fq_from_str(&els[0]),
-            fq_from_str(&els[1]),
-            fq_from_str(&els[2]),
-        ))
-    }
+    let els: Vec<String> = json
+        .get(key)
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i.as_str().unwrap().to_string())
+        .collect();
+    G1Affine::from(G1Projective::new(
+        fq_from_str(&els[0]),
+        fq_from_str(&els[1]),
+        fq_from_str(&els[2]),
+    ))
+}
 
-    fn json_to_g1_vec(json: &Value, key: &str) -> Vec<G1Affine> {
-        let els: Vec<Vec<String>> = json
-            .get(key)
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|i| {
-                i.as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|x| x.as_str().unwrap().to_string())
-                    .collect::<Vec<String>>()
-            })
-            .collect();
+fn json_to_g1_vec(json: &Value, key: &str) -> Vec<G1Affine> {
+    let els: Vec<Vec<String>> = json
+        .get(key)
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| {
+            i.as_array()
+                .unwrap()
+                .iter()
+                .map(|x| x.as_str().unwrap().to_string())
+                .collect::<Vec<String>>()
+        })
+        .collect();
 
-        els.iter()
-            .map(|coords| {
-                G1Affine::from(G1Projective::new(
-                    fq_from_str(&coords[0]),
-                    fq_from_str(&coords[1]),
-                    fq_from_str(&coords[2]),
-                ))
-            })
-            .collect()
-    }
+    els.iter()
+        .map(|coords| {
+            G1Affine::from(G1Projective::new(
+                fq_from_str(&coords[0]),
+                fq_from_str(&coords[1]),
+                fq_from_str(&coords[2]),
+            ))
+        })
+        .collect()
+}
 
-    fn json_to_g2(json: &Value, key: &str) -> G2Affine {
-        let els: Vec<Vec<String>> = json
-            .get(key)
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|i| {
-                i.as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|x| x.as_str().unwrap().to_string())
-                    .collect::<Vec<String>>()
-            })
-            .collect();
+fn json_to_g2(json: &Value, key: &str) -> G2Affine {
+    let els: Vec<Vec<String>> = json
+        .get(key)
+        .unwrap()
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| {
+            i.as_array()
+                .unwrap()
+                .iter()
+                .map(|x| x.as_str().unwrap().to_string())
+                .collect::<Vec<String>>()
+        })
+        .collect();
 
-        let x = Fq2::new(fq_from_str(&els[0][0]), fq_from_str(&els[0][1]));
-        let y = Fq2::new(fq_from_str(&els[1][0]), fq_from_str(&els[1][1]));
-        let z = Fq2::new(fq_from_str(&els[2][0]), fq_from_str(&els[2][1]));
-        G2Affine::from(G2Projective::new(x, y, z))
-    }
+    let x = Fq2::new(fq_from_str(&els[0][0]), fq_from_str(&els[0][1]));
+    let y = Fq2::new(fq_from_str(&els[1][0]), fq_from_str(&els[1][1]));
+    let z = Fq2::new(fq_from_str(&els[2][0]), fq_from_str(&els[2][1]));
+    G2Affine::from(G2Projective::new(x, y, z))
+}
 
 #[test]
 fn verify_proof_with_zkey_with_r1cs() {

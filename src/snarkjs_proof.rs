@@ -1,11 +1,10 @@
+use ark_bn254::Fq6;
+use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
+use ark_ec::PairingEngine;
 use ark_ff::One;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
-    Proof,
+    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
 };
-use ark_ec::PairingEngine;
-use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G2Affine};
-use ark_bn254::Fq6;
 
 use serde::Deserialize;
 use std::str::FromStr;
@@ -47,7 +46,7 @@ pub struct SnarkJSProof {
     pub protocol: String,
     pub pi_a: Vec<String>,
     pub pi_b: Vec<Vec<String>>,
-    pub pi_c: Vec<String>
+    pub pi_c: Vec<String>,
 }
 
 impl From<SnarkJSProof> for ark_groth16::Proof<ark_bn254::Bn254> {
