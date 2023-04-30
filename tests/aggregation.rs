@@ -6,9 +6,13 @@ use ark_groth16::{
 };
 use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G2Affine};
 use ark_bn254::Fq6;
+use ark_bn254::G2Projective;
+use ark_bn254::G1Projective;
+
 use snarkpack;
 use snarkpack::transcript::Transcript;
-
+use snarkpack::{read_zkey, fr_from_str, fq_from_str};
+use serde_json::Value;
 mod constraints;
 use crate::constraints::Benchmark;
 use rand_core::SeedableRng;
@@ -119,10 +123,73 @@ fn snarkjs_groth16_aggreagtion() {
     .expect("error in verification");
 }
 
-/*
+fn json_to_g1(json: &Value, key: &str) -> G1Affine {
+        let els: Vec<String> = json
+            .get(key)
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| i.as_str().unwrap().to_string())
+            .collect();
+        G1Affine::from(G1Projective::new(
+            fq_from_str(&els[0]),
+            fq_from_str(&els[1]),
+            fq_from_str(&els[2]),
+        ))
+    }
+
+    fn json_to_g1_vec(json: &Value, key: &str) -> Vec<G1Affine> {
+        let els: Vec<Vec<String>> = json
+            .get(key)
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| {
+                i.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|x| x.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>()
+            })
+            .collect();
+
+        els.iter()
+            .map(|coords| {
+                G1Affine::from(G1Projective::new(
+                    fq_from_str(&coords[0]),
+                    fq_from_str(&coords[1]),
+                    fq_from_str(&coords[2]),
+                ))
+            })
+            .collect()
+    }
+
+    fn json_to_g2(json: &Value, key: &str) -> G2Affine {
+        let els: Vec<Vec<String>> = json
+            .get(key)
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| {
+                i.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|x| x.as_str().unwrap().to_string())
+                    .collect::<Vec<String>>()
+            })
+            .collect();
+
+        let x = Fq2::new(fq_from_str(&els[0][0]), fq_from_str(&els[0][1]));
+        let y = Fq2::new(fq_from_str(&els[1][0]), fq_from_str(&els[1][1]));
+        let z = Fq2::new(fq_from_str(&els[2][0]), fq_from_str(&els[2][1]));
+        G2Affine::from(G2Projective::new(x, y, z))
+    }
+
 #[test]
 fn verify_proof_with_zkey_with_r1cs() {
-    use super::*;
     use ark_bn254::{G1Projective, G2Projective};
     use ark_crypto_primitives::snark::SNARK;
     use num_bigint::BigUint;
@@ -139,5 +206,12 @@ fn verify_proof_with_zkey_with_r1cs() {
     let path = "./tests/circuit_final.zkey";
     let mut file = File::open(path).unwrap();
     let (params, _matrices) = read_zkey(&mut file).unwrap(); // binfile.proving_key().unwrap();
+    let json = std::fs::read_to_string("./tests/secret/000/verification_key.json").unwrap();
+    let json: Value = serde_json::from_str(&json).unwrap();
+
+    assert_eq!(json_to_g1(&json, "vk_alpha_1"), params.vk.alpha_g1);
+    assert_eq!(json_to_g2(&json, "vk_beta_2"), params.vk.beta_g2);
+    assert_eq!(json_to_g2(&json, "vk_gamma_2"), params.vk.gamma_g2);
+    assert_eq!(json_to_g2(&json, "vk_delta_2"), params.vk.delta_g2);
+    assert_eq!(json_to_g1_vec(&json, "IC"), params.vk.gamma_abc_g1);
 }
-*/
