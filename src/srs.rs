@@ -327,7 +327,7 @@ fn read_vec<G: CanonicalDeserialize, R: Read>(
 #[cfg(test)]
 mod test {
     use super::*;
-    use ark_bn254::Bn254 as Bls12;
+    use ark_bn254::Bn254;
     use rand_core::SeedableRng;
     use std::io::Cursor;
 
@@ -335,12 +335,12 @@ mod test {
     fn test_srs_invalid_length() {
         let mut rng = rand_chacha::ChaChaRng::seed_from_u64(0u64);
         let size = 8;
-        let srs = setup_fake_srs::<Bls12, _>(&mut rng, size);
+        let srs = setup_fake_srs::<Bn254, _>(&mut rng, size);
         let vec_len = srs.g_alpha_powers.len();
         let mut buffer = Vec::new();
         srs.write(&mut buffer).expect("writing to buffer failed");
         // tryingout normal operations
-        GenericSRS::<Bls12>::read(&mut Cursor::new(&buffer)).expect("can't read the srs");
+        GenericSRS::<Bn254>::read(&mut Cursor::new(&buffer)).expect("can't read the srs");
 
         // trying to read the first size
         let read_size = u32::deserialize(Cursor::new(&buffer)).unwrap() as usize;
@@ -355,7 +355,7 @@ mod test {
             .expect("failed to write invalid size");
         buffer.drain(0..4);
         new_buffer.append(&mut buffer);
-        GenericSRS::<Bls12>::read(&mut Cursor::new(&new_buffer))
+        GenericSRS::<Bn254>::read(&mut Cursor::new(&new_buffer))
             .expect_err("this should have failed");
     }
 }
