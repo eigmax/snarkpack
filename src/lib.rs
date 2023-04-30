@@ -6,11 +6,16 @@ mod errors;
 mod ip;
 mod pairing_check;
 mod proof;
+mod snarkjs_proof;
 mod prover;
 pub mod srs;
 pub mod transcript;
 mod verifier;
 
+#[macro_use]
+extern crate serde_derive;
+
+pub use snarkjs_proof::*;
 pub use errors::*;
 pub use prover::*;
 pub use transcript::*;

@@ -1,14 +1,23 @@
-use ark_bn254::{Bn254, Fr};
+#[allow(dead_code)]
 use ark_ff::One;
 use ark_groth16::{
     create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
+    Proof,
 };
+use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G2Affine};
+use ark_bn254::Fq6;
 use snarkpack;
 use snarkpack::transcript::Transcript;
 
 mod constraints;
 use crate::constraints::Benchmark;
 use rand_core::SeedableRng;
+
+#[macro_use]
+extern crate serde_derive;
+
+use serde::Deserialize;
+use std::str::FromStr;
 
 #[test]
 fn groth16_aggregation() {
@@ -49,6 +58,60 @@ fn groth16_aggregation() {
         &ver_srs,
         &pvk,
         &all_inputs,
+        &aggregate_proof,
+        &mut rng,
+        &mut ver_transcript,
+    )
+    .expect("error in verification");
+}
+
+#[test]
+fn snarkjs_groth16_aggreagtion() {
+    use std::fs::File;
+    use snarkpack::{SnarkJSVK, SnarkJSProof, fr_from_str, get_prepared_verifying_key};
+
+    let nproofs = 2;
+    let mut rng = rand_chacha::ChaChaRng::seed_from_u64(1u64);
+
+    let srs = snarkpack::srs::setup_fake_srs::<Bn254, _>(&mut rng, nproofs);
+    let (prover_srs, ver_srs) = srs.specialize(nproofs);
+
+    let mut proofs: Vec<ark_groth16::Proof<Bn254>> = vec![];
+    let mut inputs: Vec<Vec<Fr>> = vec![];
+
+    let mut vk_json: SnarkJSVK = SnarkJSVK::default();
+    for i in 0..nproofs {
+        let base_path = format!("tests/secret/{:03}", i);
+        let file = File::open(format!("{}/proof.json", base_path)).unwrap();
+        let proof_json: SnarkJSProof = serde_json::from_reader(file).unwrap();
+        let file = File::open(format!("{}/verification_key.json", base_path)).unwrap();
+        vk_json = serde_json::from_reader(file).unwrap();
+        let file = File::open(format!("{}/public.json", base_path)).unwrap();
+        let public_json: Vec<String> = serde_json::from_reader(file).unwrap();
+        let pvk = get_prepared_verifying_key(vk_json.clone());
+        let ark_pub_inputs: Vec<ark_bn254::Fr> = public_json.into_iter().map(fr_from_str).collect();
+        let res = ark_groth16::verify_proof(&pvk.into(), &proof_json.clone().into(), &ark_pub_inputs[..]).unwrap();
+        assert_eq!(res, true);
+        proofs.push(proof_json.into());
+        inputs.push(ark_pub_inputs);
+    }
+
+    // aggregate proof
+    let mut prover_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
+    prover_transcript.append(b"public-inputs", &inputs);
+    let aggregate_proof = snarkpack::aggregate_proofs(&prover_srs, &mut prover_transcript, &proofs)
+        .expect("error in aggregation");
+
+    let mut ver_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
+    ver_transcript.append(b"public-inputs", &inputs);
+
+    let parse_vkey: ark_groth16::VerifyingKey<ark_bn254::Bn254> = vk_json.into();
+    let pvk = ark_groth16::prepare_verifying_key(&parse_vkey);
+
+    snarkpack::verify_aggregate_proof(
+        &ver_srs,
+        &pvk,
+        &inputs,
         &aggregate_proof,
         &mut rng,
         &mut ver_transcript,
