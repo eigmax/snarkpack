@@ -84,6 +84,7 @@ fn snarkjs_groth16_aggreagtion() {
     let mut inputs: Vec<Vec<Fr>> = vec![];
 
     let mut vk_json: SnarkJSVK = SnarkJSVK::default();
+    // another impl: https://github.com/howjmay/ark-circom-example/blob/master/read-from-snarkjs-prove-by-arkworks/src/main.rs#L7
     for i in 0..nproofs {
         let base_path = format!("tests/secret/{:03}", i);
         let file = File::open(format!("{}/proof.json", base_path)).unwrap();
