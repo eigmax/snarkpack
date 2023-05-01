@@ -16,7 +16,7 @@ use super::{
     proof::{AggregateProof, GipaProof, KZGOpening, TippMippProof},
     srs::ProverSRS,
     structured_scalar_power,
-    transcript::Transcript,
+    transcript::LocalTranscript,
 };
 
 /// Aggregate `n` zkSnark proofs, where `n` must be a power of two.
@@ -30,7 +30,7 @@ use super::{
 /// number of proofs and public inputs (+100ms in our case). In the case of Filecoin, the only
 /// non-fixed part of the public inputs are the challenges derived from a seed. Even though this
 /// seed comes from a random beeacon, we are hashing this as a safety precaution.
-pub fn aggregate_proofs<E: PairingEngine + std::fmt::Debug, T: Transcript>(
+pub fn aggregate_proofs<E: PairingEngine + std::fmt::Debug, T: LocalTranscript>(
     srs: &ProverSRS<E>,
     transcript: &mut T,
     proofs: &[Proof<E>],
@@ -67,9 +67,9 @@ pub fn aggregate_proofs<E: PairingEngine + std::fmt::Debug, T: Transcript>(
     };
 
     // Derive a random scalar to perform a linear combination of proofs
-    transcript.append(b"AB-commitment", &com_ab);
-    transcript.append(b"C-commitment", &com_c);
-    let r = transcript.challenge_scalar::<E::Fr>(b"r-random-fiatshamir");
+    transcript.append(&com_ab);
+    transcript.append(&com_c);
+    let r = transcript.challenge_scalar::<E::Fr>();
 
     // 1,r, r^2, r^3, r^4 ...
     let r_vec: Vec<E::Fr> = structured_scalar_power(proofs.len(), &r);
@@ -130,7 +130,7 @@ pub fn aggregate_proofs<E: PairingEngine + std::fmt::Debug, T: Transcript>(
 /// commitment key v is used to commit to A and C recursively in GIPA such that
 /// only one KZG proof is needed for v. In the original paper version, since the
 /// challenges of GIPA would be different, two KZG proofs would be needed.
-fn prove_tipp_mipp<E: PairingEngine, T: Transcript>(
+fn prove_tipp_mipp<E: PairingEngine, T: LocalTranscript>(
     srs: &ProverSRS<E>,
     transcript: &mut T,
     a: &[E::G1Affine],
@@ -155,12 +155,12 @@ fn prove_tipp_mipp<E: PairingEngine, T: Transcript>(
     let r_inverse = r_shift.inverse().unwrap();
 
     // KZG challenge point
-    transcript.append(b"kzg-challenge", &challenges[0]);
-    transcript.append(b"vkey0", &proof.final_vkey.0);
-    transcript.append(b"vkey1", &proof.final_vkey.1);
-    transcript.append(b"wkey0", &proof.final_wkey.0);
-    transcript.append(b"wkey1", &proof.final_wkey.1);
-    let z = transcript.challenge_scalar::<E::Fr>(b"z-challenge");
+    transcript.append(&challenges[0]);
+    transcript.append(&proof.final_vkey.0);
+    transcript.append(&proof.final_vkey.1);
+    transcript.append(&proof.final_wkey.0);
+    transcript.append(&proof.final_wkey.1);
+    let z = transcript.challenge_scalar::<E::Fr>();
     // Complete KZG proofs
     par! {
         let vkey_opening = prove_commitment_v(
@@ -190,7 +190,7 @@ fn prove_tipp_mipp<E: PairingEngine, T: Transcript>(
 /// the challenges generated necessary to do the polynomial commitment proof
 /// later in TIPP.
 fn gipa_tipp_mipp<E: PairingEngine>(
-    transcript: &mut impl Transcript,
+    transcript: &mut impl LocalTranscript,
     a: &[E::G1Affine],
     b: &[E::G2Affine],
     c: &[E::G1Affine],
@@ -215,9 +215,9 @@ fn gipa_tipp_mipp<E: PairingEngine>(
     let mut challenges: Vec<E::Fr> = Vec::new();
     let mut challenges_inv: Vec<E::Fr> = Vec::new();
 
-    transcript.append(b"inner-product-ab", ip_ab);
-    transcript.append(b"comm-c", agg_c);
-    let mut c_inv: E::Fr = transcript.challenge_scalar::<E::Fr>(b"first-challenge");
+    transcript.append(ip_ab);
+    transcript.append(agg_c);
+    let mut c_inv: E::Fr = transcript.challenge_scalar::<E::Fr>();
     let mut c = c_inv.inverse().unwrap();
 
     let mut i = 0;
@@ -272,16 +272,16 @@ fn gipa_tipp_mipp<E: PairingEngine>(
         if i == 0 {
             // already generated c_inv and c outside of the loop
         } else {
-            transcript.append(b"c_inv", &c_inv);
-            transcript.append(b"zab_l", &zab_l);
-            transcript.append(b"zab_r", &zab_r);
-            transcript.append(b"zc_l", &zc_l);
-            transcript.append(b"zc_r", &zc_r);
-            transcript.append(b"tab_l", &tab_l);
-            transcript.append(b"tab_r", &tab_r);
-            transcript.append(b"tuc_l", &tuc_l);
-            transcript.append(b"tuc_r", &tuc_r);
-            c_inv = transcript.challenge_scalar::<E::Fr>(b"challenge_i");
+            transcript.append(&c_inv);
+            transcript.append(&zab_l);
+            transcript.append(&zab_r);
+            transcript.append(&zc_l);
+            transcript.append(&zc_r);
+            transcript.append(&tab_l);
+            transcript.append(&tab_r);
+            transcript.append(&tuc_l);
+            transcript.append(&tuc_r);
+            c_inv = transcript.challenge_scalar::<E::Fr>();
 
             // Optimization for multiexponentiation to rescale G2 elements with
             // 128-bit challenge Swap 'c' and 'c_inv' since can't control bit size

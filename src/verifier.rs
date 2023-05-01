@@ -14,7 +14,7 @@ use super::{
     prover::polynomial_evaluation_product_form_from_transcript,
     srs::VerifierSRS,
     structured_scalar_power,
-    transcript::Transcript,
+    transcript::LocalTranscript,
 };
 use crate::Error;
 
@@ -38,7 +38,7 @@ use std::time::Instant;
 pub fn verify_aggregate_proof<
     E: PairingEngine + std::fmt::Debug,
     R: Rng + Send,
-    T: Transcript + Send,
+    T: LocalTranscript + Send,
 >(
     ip_verifier_srs: &VerifierSRS<E>,
     pvk: &PreparedVerifyingKey<E>,
@@ -64,9 +64,9 @@ pub fn verify_aggregate_proof<
     let mut_rng = Mutex::new(rng);
 
     // Random linear combination of proofs
-    transcript.append(b"AB-commitment", &proof.com_ab);
-    transcript.append(b"C-commitment", &proof.com_c);
-    let r = transcript.challenge_scalar::<E::Fr>(b"r-random-fiatshamir");
+    transcript.append(&proof.com_ab);
+    transcript.append(&proof.com_c);
+    let r = transcript.challenge_scalar::<E::Fr>();
 
     // channels to send/recv pairing checks so we aggregate them all in a
     // loop - 9 places where we send pairing checks
@@ -200,7 +200,7 @@ pub fn verify_aggregate_proof<
 /// verify_tipp_mipp returns a pairing equation to check the tipp proof.  $r$ is
 /// the randomness used to produce a random linear combination of A and B and
 /// used in the MIPP part with C
-fn verify_tipp_mipp<E: PairingEngine, R: Rng + Send, T: Transcript + Send>(
+fn verify_tipp_mipp<E: PairingEngine, R: Rng + Send, T: LocalTranscript + Send>(
     v_srs: &VerifierSRS<E>,
     proof: &AggregateProof<E>,
     r_shift: &E::Fr,
@@ -222,12 +222,12 @@ fn verify_tipp_mipp<E: PairingEngine, R: Rng + Send, T: Transcript + Send>(
     let fvkey = proof.tmipp.gipa.final_vkey;
     let fwkey = proof.tmipp.gipa.final_wkey;
     // KZG challenge point
-    transcript.append(b"kzg-challenge", &challenges[0]);
-    transcript.append(b"vkey0", &proof.tmipp.gipa.final_vkey.0);
-    transcript.append(b"vkey1", &proof.tmipp.gipa.final_vkey.1);
-    transcript.append(b"wkey0", &proof.tmipp.gipa.final_wkey.0);
-    transcript.append(b"wkey1", &proof.tmipp.gipa.final_wkey.1);
-    let c = transcript.challenge_scalar::<E::Fr>(b"z-challenge");
+    transcript.append(&challenges[0]);
+    transcript.append(&proof.tmipp.gipa.final_vkey.0);
+    transcript.append(&proof.tmipp.gipa.final_vkey.1);
+    transcript.append(&proof.tmipp.gipa.final_wkey.0);
+    transcript.append(&proof.tmipp.gipa.final_wkey.1);
+    let c = transcript.challenge_scalar::<E::Fr>();
     // we take reference so they are able to be copied in the par! macro
     let final_a = &proof.tmipp.gipa.final_a;
     let final_b = &proof.tmipp.gipa.final_b;
@@ -335,7 +335,7 @@ fn verify_tipp_mipp<E: PairingEngine, R: Rng + Send, T: Transcript + Send>(
 /// * There are T,U,Z vectors as well for the MIPP relationship. Both TIPP and
 /// MIPP share the same challenges however, enabling to re-use common operations
 /// between them, such as the KZG proof for commitment keys.
-fn gipa_verify_tipp_mipp<E: PairingEngine, T: Transcript + Send>(
+fn gipa_verify_tipp_mipp<E: PairingEngine, T: LocalTranscript + Send>(
     proof: &AggregateProof<E>,
     r_shift: &E::Fr,
     transcript: &mut T,
@@ -355,9 +355,9 @@ fn gipa_verify_tipp_mipp<E: PairingEngine, T: Transcript + Send>(
     let mut challenges = Vec::new();
     let mut challenges_inv = Vec::new();
 
-    transcript.append(b"inner-product-ab", &proof.ip_ab);
-    transcript.append(b"comm-c", &proof.agg_c);
-    let mut c_inv: E::Fr = transcript.challenge_scalar::<E::Fr>(b"first-challenge");
+    transcript.append(&proof.ip_ab);
+    transcript.append(&proof.agg_c);
+    let mut c_inv: E::Fr = transcript.challenge_scalar::<E::Fr>();
     let mut c = c_inv.inverse().unwrap();
 
     // We first generate all challenges as this is the only consecutive process
@@ -378,16 +378,16 @@ fn gipa_verify_tipp_mipp<E: PairingEngine, T: Transcript + Send>(
         if i == 0 {
             // already generated c_inv and c outside of the loop
         } else {
-            transcript.append(b"c_inv", &c_inv);
-            transcript.append(b"zab_l", zab_l);
-            transcript.append(b"zab_r", zab_r);
-            transcript.append(b"zc_l", zc_l);
-            transcript.append(b"zc_r", zc_r);
-            transcript.append(b"tab_l", tab_l);
-            transcript.append(b"tab_r", tab_r);
-            transcript.append(b"tuc_l", tuc_l);
-            transcript.append(b"tuc_r", tuc_r);
-            c_inv = transcript.challenge_scalar::<E::Fr>(b"challenge_i");
+            transcript.append(&c_inv);
+            transcript.append(zab_l);
+            transcript.append(zab_r);
+            transcript.append(zc_l);
+            transcript.append(zc_r);
+            transcript.append(tab_l);
+            transcript.append(tab_r);
+            transcript.append(tuc_l);
+            transcript.append(tuc_r);
+            c_inv = transcript.challenge_scalar::<E::Fr>();
             c = c_inv.inverse().unwrap();
         }
         challenges.push(c);
