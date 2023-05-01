@@ -1,25 +1,18 @@
-use ark_bn254::Fq6;
 use ark_bn254::G1Projective;
 use ark_bn254::G2Projective;
-use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
+use ark_bn254::{Bn254, Fq2, Fr, G1Affine, G2Affine};
 #[allow(dead_code)]
 use ark_ff::One;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
+    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof
 };
 
 use serde_json::Value;
 use snarkpack;
-use snarkpack::{fq_from_str, fr_from_str, read_zkey, LocalTranscript};
+use snarkpack::{fq_from_str, read_zkey, LocalTranscript};
 mod constraints;
 use crate::constraints::Benchmark;
 use rand_core::SeedableRng;
-
-#[macro_use]
-extern crate serde_derive;
-
-use serde::Deserialize;
-use std::str::FromStr;
 
 #[test]
 fn groth16_aggregation() {
@@ -202,19 +195,8 @@ fn json_to_g2(json: &Value, key: &str) -> G2Affine {
 
 #[test]
 fn verify_proof_with_zkey_with_r1cs() {
-    use ark_bn254::{G1Projective, G2Projective};
-    use ark_crypto_primitives::snark::SNARK;
-    use num_bigint::BigUint;
     use serde_json::Value;
     use std::fs::File;
-
-    use ark_groth16::Groth16;
-    use ark_std::rand::thread_rng;
-    use num_traits::{One, Zero};
-    use std::str::FromStr;
-
-    use std::convert::TryFrom;
-
     let path = "./tests/circuit_final.zkey";
     let mut file = File::open(path).unwrap();
     let (params, _matrices) = read_zkey(&mut file).unwrap(); // binfile.proving_key().unwrap();
