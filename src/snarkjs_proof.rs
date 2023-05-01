@@ -1,11 +1,10 @@
+use ark_bn254::Fq6;
+use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
+use ark_ec::PairingEngine;
 use ark_ff::One;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof,
-    Proof,
+    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
 };
-use ark_ec::PairingEngine;
-use ark_bn254::{Bn254, Fr, Fq, Fq2, G1Affine, G2Affine};
-use ark_bn254::Fq6;
 
 use serde::Deserialize;
 use std::str::FromStr;
@@ -14,28 +13,28 @@ pub fn fr_from_str(s: String) -> ark_bn254::Fr {
     ark_bn254::Fr::from_str(&s).unwrap()
 }
 
-fn fq_from_str(s: String) -> ark_bn254::Fq {
+pub fn fq_from_str(s: &String) -> ark_bn254::Fq {
     ark_bn254::Fq::from_str(&s).unwrap()
 }
 
-fn g1_from_str(g1: &[String]) -> ark_bn254::G1Affine {
-    let x = fq_from_str(g1[0].clone());
-    let y = fq_from_str(g1[1].clone());
-    let z = fq_from_str(g1[2].clone());
+pub fn g1_from_str(g1: &[String]) -> ark_bn254::G1Affine {
+    let x = fq_from_str(&g1[0]);
+    let y = fq_from_str(&g1[1]);
+    let z = fq_from_str(&g1[2]);
     ark_bn254::G1Affine::from(ark_bn254::G1Projective::new(x, y, z))
 }
 
-fn g2_from_str(g2: &[Vec<String>]) -> ark_bn254::G2Affine {
-    let c0 = fq_from_str(g2[0][0].clone());
-    let c1 = fq_from_str(g2[0][1].clone());
+pub fn g2_from_str(g2: &[Vec<String>]) -> ark_bn254::G2Affine {
+    let c0 = fq_from_str(&g2[0][0]);
+    let c1 = fq_from_str(&g2[0][1]);
     let x = ark_bn254::Fq2::new(c0, c1);
 
-    let c0 = fq_from_str(g2[1][0].clone());
-    let c1 = fq_from_str(g2[1][1].clone());
+    let c0 = fq_from_str(&g2[1][0]);
+    let c1 = fq_from_str(&g2[1][1]);
     let y = ark_bn254::Fq2::new(c0, c1);
 
-    let c0 = fq_from_str(g2[2][0].clone());
-    let c1 = fq_from_str(g2[2][1].clone());
+    let c0 = fq_from_str(&g2[2][0]);
+    let c1 = fq_from_str(&g2[2][1]);
     let z = ark_bn254::Fq2::new(c0, c1);
 
     ark_bn254::G2Affine::from(ark_bn254::G2Projective::new(x, y, z))
@@ -47,7 +46,7 @@ pub struct SnarkJSProof {
     pub protocol: String,
     pub pi_a: Vec<String>,
     pub pi_b: Vec<Vec<String>>,
-    pub pi_c: Vec<String>
+    pub pi_c: Vec<String>,
 }
 
 impl From<SnarkJSProof> for ark_groth16::Proof<ark_bn254::Bn254> {

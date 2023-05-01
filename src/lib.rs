@@ -6,20 +6,21 @@ mod errors;
 mod ip;
 mod pairing_check;
 mod proof;
-mod snarkjs_proof;
 mod prover;
 pub mod srs;
 pub mod transcript;
 mod verifier;
-//mod zkey;
+
+mod snarkjs_proof;
+mod snarkjs_zkey;
 
 #[macro_use]
 extern crate serde_derive;
 
-//pub use zkey::*;
-pub use snarkjs_proof::*;
 pub use errors::*;
 pub use prover::*;
+pub use snarkjs_proof::*;
+pub use snarkjs_zkey::*;
 pub use transcript::*;
 pub use verifier::*;
 
