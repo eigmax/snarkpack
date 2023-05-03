@@ -1,26 +1,18 @@
-use ark_bn254::Fq6;
 use ark_bn254::G1Projective;
 use ark_bn254::G2Projective;
-use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
+use ark_bn254::{Bn254, Fq2, Fr, G1Affine, G2Affine};
 #[allow(dead_code)]
 use ark_ff::One;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
+    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof
 };
 
 use serde_json::Value;
 use snarkpack;
-use snarkpack::transcript::Transcript;
-use snarkpack::{fq_from_str, fr_from_str, read_zkey};
+use snarkpack::{fq_from_str, read_zkey, LocalTranscript};
 mod constraints;
 use crate::constraints::Benchmark;
 use rand_core::SeedableRng;
-
-#[macro_use]
-extern crate serde_derive;
-
-use serde::Deserialize;
-use std::str::FromStr;
 
 #[test]
 fn groth16_aggregation() {
@@ -51,13 +43,13 @@ fn groth16_aggregation() {
     let r = verify_proof(&pvk, &proofs[1], &inputs).unwrap();
     assert!(r);
 
-    let mut prover_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
-    prover_transcript.append(b"public-inputs", &all_inputs);
+    let mut prover_transcript = snarkpack::transcript::new_keccak_transcript();
+    prover_transcript.append(&all_inputs);
     let aggregate_proof = snarkpack::aggregate_proofs(&prover_srs, &mut prover_transcript, &proofs)
         .expect("error in aggregation");
 
-    let mut ver_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
-    ver_transcript.append(b"public-inputs", &all_inputs);
+    let mut ver_transcript = snarkpack::transcript::new_keccak_transcript();
+    ver_transcript.append(&all_inputs);
     snarkpack::verify_aggregate_proof(
         &ver_srs,
         &pvk,
@@ -104,13 +96,23 @@ fn snarkjs_groth16_aggreagtion() {
     }
 
     // aggregate proof
-    let mut prover_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
-    prover_transcript.append(b"public-inputs", &inputs);
+    let mut prover_transcript = snarkpack::transcript::new_keccak_transcript();
+    prover_transcript.append(&inputs);
     let aggregate_proof = snarkpack::aggregate_proofs(&prover_srs, &mut prover_transcript, &proofs)
         .expect("error in aggregation");
 
-    let mut ver_transcript = snarkpack::transcript::new_merlin_transcript(b"test aggregation");
-    ver_transcript.append(b"public-inputs", &inputs);
+    /*
+    println!("aggregate_proof com_ab {} {}", aggregate_proof.com_ab.0, aggregate_proof.com_ab.1);
+    println!("aggregate_proof com_c {} {}", aggregate_proof.com_c.0, aggregate_proof.com_c.1);
+    println!("aggregate_proof ip_ab {}", aggregate_proof.ip_ab);
+    println!("aggregate_proof agg_c {}", aggregate_proof.agg_c);
+    let mut data = Vec::new();
+    aggregate_proof.write(&mut data);
+    println!("aggregate_proof tmipp {:?}", data);
+    */
+
+    let mut ver_transcript = snarkpack::transcript::new_keccak_transcript();
+    ver_transcript.append(&inputs);
 
     let parse_vkey: ark_groth16::VerifyingKey<ark_bn254::Bn254> = vk_json.into();
     let pvk = ark_groth16::prepare_verifying_key(&parse_vkey);
@@ -193,19 +195,8 @@ fn json_to_g2(json: &Value, key: &str) -> G2Affine {
 
 #[test]
 fn verify_proof_with_zkey_with_r1cs() {
-    use ark_bn254::{G1Projective, G2Projective};
-    use ark_crypto_primitives::snark::SNARK;
-    use num_bigint::BigUint;
     use serde_json::Value;
     use std::fs::File;
-
-    use ark_groth16::Groth16;
-    use ark_std::rand::thread_rng;
-    use num_traits::{One, Zero};
-    use std::str::FromStr;
-
-    use std::convert::TryFrom;
-
     let path = "./tests/circuit_final.zkey";
     let mut file = File::open(path).unwrap();
     let (params, _matrices) = read_zkey(&mut file).unwrap(); // binfile.proving_key().unwrap();

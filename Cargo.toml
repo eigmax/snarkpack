@@ -20,7 +20,7 @@ digest = { version = "0.9" }
 sha2 = { version = "^0.9" }
 rayon = { version = "1", optional = true }
 thiserror = { version = "^1.0" }
-merlin = { version = "^3.0" }
+bellman_ce = { git = "https://github.com/matter-labs/bellman", branch = "beta", default-features = false, features = ["plonk"] } # active features depend on build type
 ark-bn254 = { version = "^0.3.0", default-features = false, features = ["curve"] }
 ark-snark = { version = "0.3.0", default-features = false }
 serde = "1.0"

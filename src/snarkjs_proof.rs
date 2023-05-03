@@ -1,20 +1,13 @@
 use ark_bn254::Fq6;
 use ark_bn254::{Bn254, Fq, Fq2, Fr, G1Affine, G2Affine};
-use ark_ec::PairingEngine;
-use ark_ff::One;
-use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
-};
-
-use serde::Deserialize;
 use std::str::FromStr;
 
-pub fn fr_from_str(s: String) -> ark_bn254::Fr {
-    ark_bn254::Fr::from_str(&s).unwrap()
+pub fn fr_from_str(s: String) -> Fr {
+    Fr::from_str(&s).unwrap()
 }
 
-pub fn fq_from_str(s: &String) -> ark_bn254::Fq {
-    ark_bn254::Fq::from_str(&s).unwrap()
+pub fn fq_from_str(s: &String) -> Fq {
+    Fq::from_str(&s).unwrap()
 }
 
 pub fn g1_from_str(g1: &[String]) -> ark_bn254::G1Affine {
@@ -49,7 +42,7 @@ pub struct SnarkJSProof {
     pub pi_c: Vec<String>,
 }
 
-impl From<SnarkJSProof> for ark_groth16::Proof<ark_bn254::Bn254> {
+impl From<SnarkJSProof> for ark_groth16::Proof<Bn254> {
     fn from(src: SnarkJSProof) -> Self {
         ark_groth16::Proof {
             a: g1_from_str(&src.pi_a),
@@ -74,7 +67,7 @@ pub struct SnarkJSVK {
     pub ic: Vec<Vec<String>>,
 }
 
-impl From<SnarkJSVK> for ark_groth16::VerifyingKey<ark_bn254::Bn254> {
+impl From<SnarkJSVK> for ark_groth16::VerifyingKey<Bn254> {
     fn from(src: SnarkJSVK) -> Self {
         let alpha_g1_ = g1_from_str(&src.vk_alpha_1);
         let beta_g2_ = g2_from_str(&src.vk_beta_2);
@@ -174,8 +167,8 @@ pub struct VerifyingKey {
     pub gamma_abc_g1: Vec<G1Affine>,
 }
 
-impl From<VerifyingKey> for ark_groth16::VerifyingKey<ark_bn254::Bn254> {
-    fn from(src: VerifyingKey) -> ark_groth16::VerifyingKey<ark_bn254::Bn254> {
+impl From<VerifyingKey> for ark_groth16::VerifyingKey<Bn254> {
+    fn from(src: VerifyingKey) -> ark_groth16::VerifyingKey<Bn254> {
         ark_groth16::VerifyingKey {
             alpha_g1: src.alpha_g1.into(),
             beta_g2: src.beta_g2.into(),
@@ -190,8 +183,8 @@ impl From<VerifyingKey> for ark_groth16::VerifyingKey<ark_bn254::Bn254> {
     }
 }
 
-impl From<ark_groth16::VerifyingKey<ark_bn254::Bn254>> for VerifyingKey {
-    fn from(src: ark_groth16::VerifyingKey<ark_bn254::Bn254>) -> VerifyingKey {
+impl From<ark_groth16::VerifyingKey<Bn254>> for VerifyingKey {
+    fn from(src: ark_groth16::VerifyingKey<Bn254>) -> VerifyingKey {
         VerifyingKey {
             alpha_g1: src.alpha_g1.into(),
             beta_g2: src.beta_g2.into(),
@@ -214,8 +207,8 @@ pub struct PreparedVerifyingKey {
     pub delta_g2_neg_pc: G2Prepared,
 }
 
-impl From<PreparedVerifyingKey> for ark_groth16::PreparedVerifyingKey<ark_bn254::Bn254> {
-    fn from(src: PreparedVerifyingKey) -> ark_groth16::PreparedVerifyingKey<ark_bn254::Bn254> {
+impl From<PreparedVerifyingKey> for ark_groth16::PreparedVerifyingKey<Bn254> {
+    fn from(src: PreparedVerifyingKey) -> ark_groth16::PreparedVerifyingKey<Bn254> {
         ark_groth16::PreparedVerifyingKey {
             vk: src.vk.into(),
             alpha_g1_beta_g2: src.alpha_g1_beta_g2.into(),
@@ -225,8 +218,8 @@ impl From<PreparedVerifyingKey> for ark_groth16::PreparedVerifyingKey<ark_bn254:
     }
 }
 
-impl From<ark_groth16::PreparedVerifyingKey<ark_bn254::Bn254>> for PreparedVerifyingKey {
-    fn from(src: ark_groth16::PreparedVerifyingKey<ark_bn254::Bn254>) -> PreparedVerifyingKey {
+impl From<ark_groth16::PreparedVerifyingKey<Bn254>> for PreparedVerifyingKey {
+    fn from(src: ark_groth16::PreparedVerifyingKey<Bn254>) -> PreparedVerifyingKey {
         PreparedVerifyingKey {
             vk: src.vk.into(),
             alpha_g1_beta_g2: src.alpha_g1_beta_g2.into(),
@@ -237,6 +230,6 @@ impl From<ark_groth16::PreparedVerifyingKey<ark_bn254::Bn254>> for PreparedVerif
 }
 
 pub fn get_prepared_verifying_key(vkey: SnarkJSVK) -> PreparedVerifyingKey {
-    let parse_vkey: ark_groth16::VerifyingKey<ark_bn254::Bn254> = vkey.into();
+    let parse_vkey: ark_groth16::VerifyingKey<Bn254> = vkey.into();
     ark_groth16::prepare_verifying_key(&parse_vkey).into()
 }
